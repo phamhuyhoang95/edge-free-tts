@@ -36,16 +36,17 @@ npm start
 ## Routes
 
 - `GET /health`
+- `GET /warmup`
 - `GET /tts?text=...&voice=vi-VN-HoaiMyNeural&rate=10&pitch=0`
 - `GET /tts/stream?text=...&voice=vi-VN-HoaiMyNeural&rate=10&pitch=0`
 - `GET /voices`
 
 ## Deploy To Render
 
-1. Push repo len GitHub
-2. Vao Render Dashboard
-3. Chon `New > Blueprint`
-4. Chon repo `edge-free-tts`
-5. Render se doc file `render.yaml` va tao web service
+1. Push the repository to GitHub
+2. Open the Render Dashboard
+3. Choose `New > Blueprint`
+4. Select the `edge-free-tts` repository
+5. Render will read `render.yaml` and create the web service
 
-Theo tai lieu Render, Blueprint dung file `render.yaml` o root repo va web service Node co the dung `npm install` / `npm start`. Render cung khuyen khai bao `healthCheckPath` cho web service.
+Render Blueprints use the `render.yaml` file from the repository root. For Node.js web services, this project uses `npm install` and `npm start`, and also exposes `/health` for health checks.

@@ -302,6 +302,17 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (url.pathname === "/warmup") {
+    writeJson(response, 200, {
+      ok: true,
+      service: "edge-free-tts",
+      warmed: true,
+      timestamp: new Date().toISOString(),
+    });
+    logRequestEnd(requestId, request.method, url, 200, startedAt);
+    return;
+  }
+
   if (url.pathname === "/tts") {
     const params = getTtsParams(url);
     if (!params.ok) {

@@ -1,28 +1,66 @@
 # free-tts API Documentation
 
-Tai lieu nay mo ta API hien tai de app Flutter co the tich hop nhanh.
+This document describes the current API for Flutter app integration.
 
-Base URL local:
+Local base URL:
 
 ```text
 http://127.0.0.1:8787
 ```
 
-Neu deploy len server thi thay base URL bang domain thuc te cua ban.
+If you deploy this service, replace the base URL with your actual domain.
 
-## Tong quan
+## Overview
 
-API co 3 endpoint:
+The API currently exposes 4 endpoints:
 
-- `GET /tts`: tra ve file MP3 hoan chinh
-- `GET /tts/stream`: stream MP3 de app co the phat som
-- `GET /voices`: tra ve danh sach giong `vi-VN`
+- `GET /warmup`: wakes up the service, useful for Render free instances
+- `GET /tts`: returns a complete MP3 file
+- `GET /tts/stream`: streams MP3 audio so playback can begin earlier
+- `GET /voices`: returns available Vietnamese voices only
 
-Tat ca endpoint deu ho tro CORS.
+All endpoints support CORS.
 
-## 1. GET /voices
+## 1. GET /warmup
 
-Lay danh sach giong tieng Viet.
+Lightweight endpoint that the app can call before requesting TTS, especially when the service may be waking up from Render cold start.
+
+### Request
+
+```http
+GET /warmup
+```
+
+### Response 200
+
+```json
+{
+  "ok": true,
+  "service": "edge-free-tts",
+  "warmed": true,
+  "timestamp": "2026-03-19T00:00:00.000Z"
+}
+```
+
+### Flutter example
+
+```dart
+import 'package:http/http.dart' as http;
+
+Future<void> warmupServer(String baseUrl) async {
+  final response = await http
+      .get(Uri.parse('$baseUrl/warmup'))
+      .timeout(const Duration(seconds: 70));
+
+  if (response.statusCode != 200) {
+    throw Exception('Warmup failed: ${response.body}');
+  }
+}
+```
+
+## 2. GET /voices
+
+Returns Vietnamese voices only.
 
 ### Request
 
@@ -65,31 +103,31 @@ Future<List<Map<String, dynamic>>> fetchVoices(String baseUrl) async {
 }
 ```
 
-## 2. GET /tts
+## 3. GET /tts
 
-Tra ve file MP3 hoan chinh. Phu hop khi ban muon:
+Returns a complete MP3 file. This is useful when you want to:
 
-- tai file ve
-- luu cache trong app
-- cho audio player doc tu URL file hoan chinh
+- download the file
+- cache audio in the app
+- play from a fully generated audio file URL
 
-### Query params
+### Query parameters
 
-- `text`: noi dung can doc, bat buoc, toi da `3000` ky tu
-- `voice`: ten giong doc, mac dinh `vi-VN-HoaiMyNeural`
-- `rate`: so nguyen tu `-100` den `100`, mac dinh `0`
-- `pitch`: so nguyen tu `-100` den `100`, mac dinh `0`
+- `text`: required, maximum `3000` characters
+- `voice`: voice name, default is `vi-VN-HoaiMyNeural`
+- `rate`: integer from `-100` to `100`, default is `0`
+- `pitch`: integer from `-100` to `100`, default is `0`
 
 ### Example request
 
 ```text
-GET /tts?text=Xin%20chao&voice=vi-VN-HoaiMyNeural&rate=20&pitch=-2
+GET /tts?text=Hello&voice=vi-VN-HoaiMyNeural&rate=20&pitch=-2
 ```
 
 ### Response 200
 
 - `Content-Type: audio/mpeg`
-- body la du lieu MP3
+- body contains MP3 audio
 
 ### Response 400
 
@@ -99,7 +137,7 @@ GET /tts?text=Xin%20chao&voice=vi-VN-HoaiMyNeural&rate=20&pitch=-2
 }
 ```
 
-Hoac:
+Or:
 
 ```json
 {
@@ -116,7 +154,7 @@ Hoac:
 }
 ```
 
-### Flutter example: tao URL de player dung truc tiep
+### Flutter example: build a direct player URL
 
 ```dart
 Uri buildTtsUri({
@@ -137,7 +175,7 @@ Uri buildTtsUri({
 }
 ```
 
-### Flutter example: tai file MP3
+### Flutter example: download MP3 bytes
 
 ```dart
 import 'dart:typed_data';
@@ -169,45 +207,45 @@ Future<Uint8List> downloadTts({
 }
 ```
 
-## 3. GET /tts/stream
+## 4. GET /tts/stream
 
-Stream audio MP3. Phu hop khi ban muon:
+Streams MP3 audio. This is useful when you want to:
 
-- bat dau phat som
-- doc truyen
-- voice chat / tro ly ao
+- start playback earlier
+- read long-form content such as stories
+- support voice chat or assistant-style UX
 
-### Query params
+### Query parameters
 
-Giong `GET /tts`.
+Same parameters as `GET /tts`.
 
-- `text`: bat buoc
-- `voice`: mac dinh `vi-VN-HoaiMyNeural`
-- `rate`: `-100` den `100`
-- `pitch`: `-100` den `100`
+- `text`: required
+- `voice`: default `vi-VN-HoaiMyNeural`
+- `rate`: `-100` to `100`
+- `pitch`: `-100` to `100`
 
 ### Example request
 
 ```text
-GET /tts/stream?text=Xin%20chao&voice=vi-VN-HoaiMyNeural&rate=20&pitch=-2
+GET /tts/stream?text=Hello&voice=vi-VN-HoaiMyNeural&rate=20&pitch=-2
 ```
 
 ### Response 200
 
 - `Content-Type: audio/mpeg`
-- body la MP3 stream
+- body contains a streamed MP3 response
 
-### Lua chon cho Flutter
+### Flutter guidance
 
-Neu audio player cua ban ho tro phat tu URL HTTP stream, hay uu tien dung `/tts/stream`.
+If your audio player supports direct HTTP streaming playback, prefer `/tts/stream`.
 
-Neu player cua ban khong phat on dinh voi stream MP3, hay dung `/tts`.
+If your player is more stable with fully generated files, use `/tts`.
 
 ## Flutter integration guide
 
-## Option A: dung URL truc tiep cho player
+## Option A: play directly from the URL
 
-Neu ban dung package nhu `just_audio`, ban co the dua URL thang cho player:
+If you use a package such as `just_audio`, you can pass the endpoint URL directly to the player.
 
 ```dart
 import 'package:just_audio/just_audio.dart';
@@ -235,7 +273,7 @@ Future<void> playStreamingTts({
 }
 ```
 
-Dung `/tts` neu ban muon cho audio file hoan chinh:
+Use `/tts` when you want the fully generated file:
 
 ```dart
 Future<void> playFullFileTts({
@@ -259,52 +297,102 @@ Future<void> playFullFileTts({
 }
 ```
 
-## Option B: goi API truoc, sau do xu ly response
+## Option B: call the API first and then process the response
 
-Dung cach nay khi ban muon:
+Use this approach when you want to:
 
-- kiem tra loi HTTP chi tiet
-- luu file
-- cache trong app
+- inspect HTTP errors directly
+- save the generated file
+- cache audio in the app
 
 ## Validation rules
 
-- `text` khong duoc rong
-- `text` toi da `3000` ky tu
-- `rate` phai la so nguyen trong khoang `-100` den `100`
-- `pitch` phai la so nguyen trong khoang `-100` den `100`
+- `text` must not be empty
+- `text` is limited to `3000` characters
+- `rate` must be an integer between `-100` and `100`
+- `pitch` must be an integer between `-100` and `100`
 
 ## Recommended settings for Vietnamese story reading
 
-Presets goi y:
+Suggested presets:
 
-- Binh thuong, ro chu: `voice=vi-VN-HoaiMyNeural`, `rate=15`, `pitch=0`
-- Nhanh ma van ro: `voice=vi-VN-HoaiMyNeural`, `rate=20`, `pitch=0`
-- Sieu nhanh nhung van nghe duoc: `voice=vi-VN-HoaiMyNeural`, `rate=28`, `pitch=-2`
+- Balanced and clear: `voice=vi-VN-HoaiMyNeural`, `rate=15`, `pitch=0`
+- Fast while staying clear: `voice=vi-VN-HoaiMyNeural`, `rate=20`, `pitch=0`
+- Very fast but still understandable: `voice=vi-VN-HoaiMyNeural`, `rate=28`, `pitch=-2`
 
 ## Suggested app defaults
 
 - Default voice: `vi-VN-HoaiMyNeural`
 - Fallback voice: `vi-VN-NamMinhNeural`
-- Default endpoint cho app nghe truc tiep: `/tts/stream`
-- Fallback endpoint khi stream player khong on dinh: `/tts`
+- Default playback endpoint: `/tts/stream`
+- Fallback endpoint when streaming is unstable: `/tts`
 
-## Error handling recommendation in Flutter
+## Error handling recommendation for Flutter
 
-- Neu `/tts/stream` loi hoac player khong phat duoc, fallback sang `/tts`
-- Neu server tra `400`, hien loi input cho user
-- Neu server tra `502`, thu lai sau
+- Call `/warmup` first when the app has been idle for a while
+- If `/tts/stream` fails or the player cannot play it, fall back to `/tts`
+- If the server returns `400`, show an input validation error to the user
+- If the server returns `502`, retry after a short delay
 
 ## Suggested fallback flow
 
-1. Goi `/tts/stream`
-2. Neu player fail hoac request fail, chuyen sang `/tts`
-3. Neu van fail, hien thong bao loi va cho user thu lai
+1. Call `/warmup`
+2. Call `/tts/stream`
+3. If the player fails or the request fails, switch to `/tts`
+4. If it still fails, show an error and allow retry
+
+## Flutter warmup + play sample
+
+```dart
+import 'package:just_audio/just_audio.dart';
+import 'package:http/http.dart' as http;
+
+final player = AudioPlayer();
+
+Future<void> warmupThenPlay({
+  required String baseUrl,
+  required String text,
+  String voice = 'vi-VN-HoaiMyNeural',
+  int rate = 20,
+  int pitch = -2,
+}) async {
+  await http
+      .get(Uri.parse('$baseUrl/warmup'))
+      .timeout(const Duration(seconds: 70));
+
+  final streamUri = Uri.parse('$baseUrl/tts/stream').replace(
+    queryParameters: {
+      'text': text,
+      'voice': voice,
+      'rate': '$rate',
+      'pitch': '$pitch',
+    },
+  );
+
+  try {
+    await player.setUrl(streamUri.toString());
+    await player.play();
+  } catch (_) {
+    final fileUri = Uri.parse('$baseUrl/tts').replace(
+      queryParameters: {
+        'text': text,
+        'voice': voice,
+        'rate': '$rate',
+        'pitch': '$pitch',
+      },
+    );
+
+    await player.setUrl(fileUri.toString());
+    await player.play();
+  }
+}
+```
 
 ## Quick test URLs
 
 ```text
 http://127.0.0.1:8787/voices
-http://127.0.0.1:8787/tts?text=Xin%20chao&voice=vi-VN-HoaiMyNeural&rate=20&pitch=-2
-http://127.0.0.1:8787/tts/stream?text=Xin%20chao&voice=vi-VN-HoaiMyNeural&rate=20&pitch=-2
+http://127.0.0.1:8787/warmup
+http://127.0.0.1:8787/tts?text=Hello&voice=vi-VN-HoaiMyNeural&rate=20&pitch=-2
+http://127.0.0.1:8787/tts/stream?text=Hello&voice=vi-VN-HoaiMyNeural&rate=20&pitch=-2
 ```
