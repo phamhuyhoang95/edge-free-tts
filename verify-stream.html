@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>free-tts Stream Verify</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4efe6;
+        --panel: #fffdf8;
+        --text: #1f1b16;
+        --muted: #6b6256;
+        --line: #d8cebf;
+        --accent: #8a3b12;
+        --accent-soft: #f1d4c4;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        background:
+          radial-gradient(circle at top left, #fff7ef 0, transparent 35%),
+          linear-gradient(180deg, #f6efe6 0%, #ede4d7 100%);
+        color: var(--text);
+      }
+
+      main {
+        max-width: 920px;
+        margin: 40px auto;
+        padding: 24px;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 18px 60px rgba(69, 44, 23, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(28px, 4vw, 44px);
+        line-height: 1;
+      }
+
+      p {
+        margin: 0 0 18px;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .field.full {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      input,
+      textarea,
+      select,
+      button {
+        font: inherit;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px 16px;
+        background: #fff;
+        color: var(--text);
+      }
+
+      textarea {
+        min-height: 150px;
+        resize: vertical;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 12px 18px;
+        cursor: pointer;
+        background: var(--accent);
+        color: #fff9f5;
+        font-weight: 700;
+      }
+
+      button.secondary {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+
+      audio {
+        width: 100%;
+        margin-top: 18px;
+      }
+
+      .stats {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        margin-top: 18px;
+      }
+
+      .stat {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fff;
+      }
+
+      .stat b {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+      }
+
+      pre {
+        margin: 18px 0 0;
+        padding: 16px;
+        border-radius: 14px;
+        background: #201914;
+        color: #f9efe2;
+        min-height: 240px;
+        overflow: auto;
+        white-space: pre-wrap;
+      }
+
+      .hint {
+        margin-top: 14px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: #fff5ec;
+        border: 1px solid #efd7c4;
+        color: #6f3a17;
+      }
+
+      @media (max-width: 720px) {
+        .grid,
+        .stats {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel">
+        <h1>free-tts Browser Verify</h1>
+        <p>
+          Mở file này trực tiếp trong browser rồi bấm test để so sánh
+          <code>/tts</code> và <code>/tts/stream</code>.
+        </p>
+
+        <div class="grid">
+          <div class="field full">
+            <label for="serverBase">Server Base URL</label>
+            <input id="serverBase" value="http://127.0.0.1:8787" />
+          </div>
+
+          <div class="field full">
+            <label for="text">Text</label>
+            <textarea id="text">Đây là một đoạn văn đủ dài để bạn kiểm tra chế độ stream. Nếu audio phát gần như ngay sau khi bấm nút stream thì endpoint streaming đang hoạt động đúng.</textarea>
+          </div>
+
+          <div class="field">
+            <label for="voice">Voice</label>
+            <input id="voice" value="vi-VN-HoaiMyNeural" />
+          </div>
+
+          <div class="field">
+            <label for="rate">Rate</label>
+            <input id="rate" type="number" min="-100" max="100" value="20" />
+          </div>
+
+          <div class="field">
+            <label for="pitch">Pitch</label>
+            <input id="pitch" type="number" min="-100" max="100" value="-2" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="playFile">Play /tts</button>
+          <button id="playStream">Play /tts/stream</button>
+          <button id="measureFile" class="secondary">Measure /tts</button>
+          <button id="measureStream" class="secondary">Measure /tts/stream</button>
+          <button id="stop" class="secondary">Stop Audio</button>
+        </div>
+
+        <audio id="player" controls preload="none"></audio>
+
+        <div class="stats">
+          <div class="stat"><b>Endpoint</b><span id="statEndpoint">-</span></div>
+          <div class="stat"><b>Player</b><span id="statPlayer">Idle</span></div>
+          <div class="stat"><b>HTTP Status</b><span id="statStatus">-</span></div>
+          <div class="stat"><b>First Byte</b><span id="statFirstByte">-</span></div>
+          <div class="stat"><b>Total Time</b><span id="statTotal">-</span></div>
+        </div>
+
+        <div class="hint">
+          Mẹo: nếu <code>/tts/stream</code> có <code>First Byte</code> thấp hơn rõ
+          so với <code>/tts</code> và audio bắt đầu phát sớm hơn, thì stream đang
+          hoạt động đúng cho app.
+        </div>
+
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      const logEl = $("log");
+      const player = $("player");
+
+      function log(message) {
+        const time = new Date().toLocaleTimeString();
+        logEl.textContent += `[${time}] ${message}\n`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function setStats({
+        endpoint = "-",
+        player = "Idle",
+        status = "-",
+        firstByte = "-",
+        total = "-",
+      }) {
+        $("statEndpoint").textContent = endpoint;
+        $("statPlayer").textContent = player;
+        $("statStatus").textContent = status;
+        $("statFirstByte").textContent = firstByte;
+        $("statTotal").textContent = total;
+      }
+
+      function getUrl(path) {
+        const base = $("serverBase").value.trim().replace(/\/$/, "");
+        const params = new URLSearchParams({
+          text: $("text").value,
+          voice: $("voice").value,
+          rate: $("rate").value,
+          pitch: $("pitch").value,
+        });
+        return `${base}${path}?${params.toString()}`;
+      }
+
+      function setBusy(isBusy) {
+        for (const button of document.querySelectorAll("button")) {
+          button.disabled = isBusy;
+        }
+      }
+
+      function setPlayerState(state) {
+        $("statPlayer").textContent = state;
+      }
+
+      async function measure(path) {
+        const url = getUrl(path);
+        setBusy(true);
+        setStats({ endpoint: path });
+        log(`Fetch ${url}`);
+
+        const startedAt = performance.now();
+
+        try {
+          const response = await fetch(url);
+          const status = response.status;
+          const reader = response.body?.getReader();
+
+          if (!reader) {
+            throw new Error("ReadableStream is not available on this response.");
+          }
+
+          let firstByteAt = null;
+          let totalBytes = 0;
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) {
+              break;
+            }
+
+            if (value) {
+              totalBytes += value.byteLength;
+              if (firstByteAt === null) {
+                firstByteAt = performance.now();
+                log(`${path} first chunk after ${Math.round(firstByteAt - startedAt)}ms`);
+              }
+            }
+          }
+
+          const endedAt = performance.now();
+          setStats({
+            endpoint: path,
+            player: $("statPlayer").textContent,
+            status: String(status),
+            firstByte: firstByteAt === null ? "No data" : `${Math.round(firstByteAt - startedAt)} ms`,
+            total: `${Math.round(endedAt - startedAt)} ms`,
+          });
+          log(`${path} completed, ${totalBytes} bytes in ${Math.round(endedAt - startedAt)}ms`);
+        } catch (error) {
+          setStats({
+            endpoint: path,
+            player: $("statPlayer").textContent,
+            status: "ERR",
+            firstByte: "-",
+            total: "-",
+          });
+          log(`${path} failed: ${error instanceof Error ? error.message : String(error)}`);
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      function play(path) {
+        const url = getUrl(path);
+        player.pause();
+        player.currentTime = 0;
+        player.src = url;
+        player.load();
+        setStats({
+          endpoint: path,
+          player: "Loading",
+          status: "Pending",
+          firstByte: "-",
+          total: "-",
+        });
+        player.play().catch((error) => {
+          setPlayerState("Play failed");
+          log(`${path} autoplay failed: ${error instanceof Error ? error.message : String(error)}`);
+        });
+        log(`Player src = ${url}`);
+      }
+
+      $("playFile").addEventListener("click", () => play("/tts"));
+      $("playStream").addEventListener("click", () => play("/tts/stream"));
+      $("measureFile").addEventListener("click", () => measure("/tts"));
+      $("measureStream").addEventListener("click", () => measure("/tts/stream"));
+      $("stop").addEventListener("click", () => {
+        player.pause();
+        player.removeAttribute("src");
+        player.load();
+        setPlayerState("Stopped");
+        log("Player stopped");
+      });
+
+      [
+        "loadstart",
+        "progress",
+        "loadedmetadata",
+        "canplay",
+        "play",
+        "playing",
+        "waiting",
+        "stalled",
+        "ended",
+        "error",
+      ].forEach((eventName) => {
+        player.addEventListener(eventName, () => {
+          setPlayerState(eventName);
+          log(`audio event: ${eventName}`);
+        });
+      });
+
+      log("Ready. Start your Node server, then test /tts and /tts/stream.");
+    </script>
+  </body>
+</html>
