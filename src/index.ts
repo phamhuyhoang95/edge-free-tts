@@ -292,6 +292,16 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (url.pathname === "/health") {
+    writeJson(response, 200, {
+      ok: true,
+      service: "edge-free-tts",
+      timestamp: new Date().toISOString(),
+    });
+    logRequestEnd(requestId, request.method, url, 200, startedAt);
+    return;
+  }
+
   if (url.pathname === "/tts") {
     const params = getTtsParams(url);
     if (!params.ok) {
@@ -420,6 +430,6 @@ const server = createServer(async (request, response) => {
   logRequestEnd(requestId, request.method, url, 404, startedAt);
 });
 
-server.listen(port, () => {
-  console.log(`TTS server listening on http://localhost:${port}`);
+server.listen(port, "0.0.0.0", () => {
+  console.log(`TTS server listening on http://0.0.0.0:${port}`);
 });

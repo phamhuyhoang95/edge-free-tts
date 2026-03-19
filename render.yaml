@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: edge-free-tts
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
